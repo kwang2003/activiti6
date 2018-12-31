@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="vacationRequest" name="休假申请流程" isExecutable="true">
+    <startEvent id="request" name="Start" activiti:initiator="employeeName">
+      <extensionElements>
+        <activiti:formProperty id="numberOfDays" name="休假天数" type="long" default="1" required="true"></activiti:formProperty>
+        <activiti:formProperty id="startDate" name="休假开始时间" type="date" datePattern="dd-MM-yyyy hh:mm" required="true"></activiti:formProperty>
+        <activiti:formProperty id="vacationMotivation" name="休假原因" type="string"></activiti:formProperty>
+      </extensionElements>
+    </startEvent>
+    <userTask id="handleRequest" name="处理请假请求" activiti:assignee="management">
+      <documentation>员工 ${employeeName} 要请假 ${numberOfDays} 天
+(休假原因: ${vacationMotivation}).</documentation>
+      <extensionElements>
+        <activiti:formProperty id="vacationApproved" name="是否同意申请？" type="enum" required="true">
+          <activiti:value id="true" name="Approve"></activiti:value>
+          <activiti:value id="false" name="Reject"></activiti:value>
+        </activiti:formProperty>
+        <activiti:formProperty id="managerMotivation" name="审批意见" type="string"></activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="requestApprovedDecision" name="审批通过？"></exclusiveGateway>
+    <sequenceFlow id="flow1" sourceRef="handleRequest" targetRef="requestApprovedDecision"></sequenceFlow>
+    <sequenceFlow id="flow2" sourceRef="handleRequest" targetRef="handleRequest"></sequenceFlow>
+    <serviceTask id="servicetask1" name="发送通知邮件" activiti:class="com.kwang2003.activiti6.task.SendMailTask"></serviceTask>
+    <sequenceFlow id="flow4" sourceRef="requestApprovedDecision" targetRef="servicetask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${vacationApproved== 'true'}]]></conditionExpression>
+    </sequenceFlow>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <sequenceFlow id="flow5" sourceRef="servicetask1" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${vacationApproved== 'false'}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="adjustVacationRequestTask" name="调整修改申请" activiti:assignee="employeeName">
+      <documentation>你的经理驳回了你的休假申请 ${numberOfDays} 天
+原因：${managerMotivation}</documentation>
+      <extensionElements>
+        <activiti:formProperty id="numberOfDays" name="休假天数" type="long" required="true"></activiti:formProperty>
+        <activiti:formProperty id="startDate" name="休假开始时间" type="date" datePattern="dd-MM-yyyy hh:mm" required="true"></activiti:formProperty>
+        <activiti:formProperty id="vacationMotivation" name="休假原因" type="string"></activiti:formProperty>
+        <activiti:formProperty id="resendRequest" name="Resend vacation request to manager?" type="enum">
+          <activiti:value id="true" name="是"></activiti:value>
+          <activiti:value id="false" name="否"></activiti:value>
+        </activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow6" sourceRef="requestApprovedDecision" targetRef="adjustVacationRequestTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${vacationApproved== 'false'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow7" sourceRef="adjustVacationRequestTask" targetRef="handleRequest">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${resendRequest =='true'}]]></conditionExpression>
+    </sequenceFlow>
+    <endEvent id="endevent2" name="End"></endEvent>
+    <sequenceFlow id="flow8" sourceRef="adjustVacationRequestTask" targetRef="endevent2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${resendRequest== 'false'}]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_vacationRequest">
+    <bpmndi:BPMNPlane bpmnElement="vacationRequest" id="BPMNPlane_vacationRequest">
+      <bpmndi:BPMNShape bpmnElement="request" id="BPMNShape_request">
+        <omgdc:Bounds height="35.0" width="35.0" x="30.0" y="94.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="handleRequest" id="BPMNShape_handleRequest">
+        <omgdc:Bounds height="55.0" width="105.0" x="120.0" y="84.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="requestApprovedDecision" id="BPMNShape_requestApprovedDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="310.0" y="91.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask1" id="BPMNShape_servicetask1">
+        <omgdc:Bounds height="55.0" width="105.0" x="410.0" y="84.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="560.0" y="94.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="adjustVacationRequestTask" id="BPMNShape_adjustVacationRequestTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="412.0" y="210.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent2" id="BPMNShape_endevent2">
+        <omgdc:Bounds height="35.0" width="35.0" x="562.0" y="220.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="225.0" y="111.0"></omgdi:waypoint>
+        <omgdi:waypoint x="310.0" y="111.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="225.0" y="111.0"></omgdi:waypoint>
+        <omgdi:waypoint x="225.0" y="111.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="350.0" y="111.0"></omgdi:waypoint>
+        <omgdi:waypoint x="410.0" y="111.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="515.0" y="111.0"></omgdi:waypoint>
+        <omgdi:waypoint x="560.0" y="111.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="330.0" y="131.0"></omgdi:waypoint>
+        <omgdi:waypoint x="330.0" y="237.0"></omgdi:waypoint>
+        <omgdi:waypoint x="412.0" y="237.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="464.0" y="265.0"></omgdi:waypoint>
+        <omgdi:waypoint x="466.0" y="313.0"></omgdi:waypoint>
+        <omgdi:waypoint x="172.0" y="313.0"></omgdi:waypoint>
+        <omgdi:waypoint x="172.0" y="139.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="517.0" y="237.0"></omgdi:waypoint>
+        <omgdi:waypoint x="562.0" y="237.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
