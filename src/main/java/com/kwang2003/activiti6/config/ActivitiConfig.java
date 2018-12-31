@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 
 import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.ProcessEngineConfiguration;
-import org.activiti.engine.RepositoryService;
 import org.activiti.engine.delegate.event.ActivitiEvent;
 import org.activiti.engine.delegate.event.ActivitiEventListener;
 import org.activiti.engine.impl.history.HistoryLevel;
@@ -24,7 +23,8 @@ public class ActivitiConfig {
 			PlatformTransactionManager transactionManager) {
 		SpringProcessEngineConfiguration configuration = new SpringProcessEngineConfiguration();
 		configuration.setDataSource(dataSource);
-		configuration.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE);
+//		configuration.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP);
+		configuration.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
 		configuration.setTransactionManager(transactionManager);
 		configuration.setAsyncExecutorActivate(true);
 		configuration.setHistory(HistoryLevel.AUDIT.getKey());// 默认audit
@@ -38,16 +38,9 @@ public class ActivitiConfig {
 		ProcessEngineFactoryBean bean = new ProcessEngineFactoryBean();
 		bean.setProcessEngineConfiguration(springProcessEngineConfiguration);
 		ProcessEngine engine = bean.getObject();
-//		deployProcess(engine);//新创建的bpmn流程或者修改后的文件需要放开注释
 		return engine;
 	}
 	
-	private void deployProcess(ProcessEngine processEngine) {
-		RepositoryService repositoryService = processEngine.getRepositoryService();
-		repositoryService.createDeployment()
-		.addClasspathResource("processes/VacationRequest.bpmn")
-		.deploy();
-	}
 
 	@Bean
 	public PlatformTransactionManager transactionManager(DataSource dataSource) {
