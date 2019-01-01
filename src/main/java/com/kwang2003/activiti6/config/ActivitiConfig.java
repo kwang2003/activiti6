@@ -21,6 +21,7 @@ public class ActivitiConfig {
 	@Bean
 	public SpringProcessEngineConfiguration springProcessEngineConfiguration(DataSource dataSource,
 			PlatformTransactionManager transactionManager) {
+		final String chineseFont = "宋体";
 		SpringProcessEngineConfiguration configuration = new SpringProcessEngineConfiguration();
 		configuration.setDataSource(dataSource);
 //		configuration.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP);
@@ -29,6 +30,9 @@ public class ActivitiConfig {
 		configuration.setAsyncExecutorActivate(true);
 		configuration.setHistory(HistoryLevel.AUDIT.getKey());// 默认audit
 		configuration.setEventListeners(Lists.newArrayList(new MyEventListener()));
+		configuration.setActivityFontName(chineseFont);
+		configuration.setLabelFontName(chineseFont);
+		configuration.setAnnotationFontName(chineseFont);
 		return configuration;
 	}
 
@@ -41,7 +45,6 @@ public class ActivitiConfig {
 		return engine;
 	}
 	
-
 	@Bean
 	public PlatformTransactionManager transactionManager(DataSource dataSource) {
 		DataSourceTransactionManager dataSourceTransactionManager = new DataSourceTransactionManager(dataSource);
@@ -65,8 +68,6 @@ public class ActivitiConfig {
 
 		@Override
 		public boolean isFailOnException() {
-			// The logic in the onEvent method of this listener is not critical, exceptions
-			// can be ignored if logging fails...
 			return false;
 		}
 	}
