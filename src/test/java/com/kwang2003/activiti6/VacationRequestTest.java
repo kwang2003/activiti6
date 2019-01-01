@@ -1,18 +1,26 @@
 package com.kwang2003.activiti6;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.activiti.engine.RepositoryService;
 import org.activiti.engine.repository.Deployment;
+import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -55,5 +63,20 @@ public class VacationRequestTest extends Activiti6ApplicationTests {
 		tasks.forEach(task -> {
 			log.info("{}",task);
 		});
+	}
+	
+	@Test
+	@DisplayName("获取流程图")
+	public void testRetriveProcessImage() throws IOException{
+		RepositoryService repositoryService = processEngine.getRepositoryService();
+		List<ProcessDefinition> processDefinitions = repositoryService.createProcessDefinitionQuery().processDefinitionKey("vacationRequest").list();
+		for(ProcessDefinition processDefinition : processDefinitions) {
+			String diagramResourceName = processDefinition.getDiagramResourceName();
+			@Cleanup
+			InputStream inputStream = repositoryService.getResourceAsStream(processDefinition.getDeploymentId(), diagramResourceName);
+			Path path = FileSystems.getDefault().getPath("d:/", diagramResourceName);;
+			Files.copy(inputStream, path);
+		}
+		
 	}
 }
