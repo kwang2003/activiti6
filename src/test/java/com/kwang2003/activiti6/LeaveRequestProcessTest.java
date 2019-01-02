@@ -11,6 +11,7 @@ import java.util.Map;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,8 @@ public class LeaveRequestProcessTest extends Activiti6ApplicationTests {
 	private static Employee XIAOZHAO = new Employee("a007", "小昭", "hr");
 
 	@Test
-	@DisplayName("部署")
+	@Disabled
+	@DisplayName("部署-修改流程定义的时候需要放开@Disabled注解")
 	public void deploy() throws UnknownHostException {
 		Deployment deployment = repositoryService.createDeployment()
 				.addClasspathResource("processes/LeaveRequestProcess.bpmn").name("提交申请表单assignee组设置为department_manager")
@@ -55,6 +57,15 @@ public class LeaveRequestProcessTest extends Activiti6ApplicationTests {
 		departmentApproveLeaveRequest(ZHANGWUJI);
 		// HR备案
 		hrHandle(XIAOZHAO);
+	}
+
+	@Test
+	@DisplayName("请假1天审核拒绝")
+	public void request1DayReject() {
+		// 普通员工个请假流程，提交表单
+		employeeSubmitLeaveRequest(ZHANGSAN, 1);
+		// 部门经理审核拒绝
+		duptyGeneralManagerRejectLeaveRequest(ZHANGWUJI);
 	}
 
 	@Test
@@ -85,7 +96,7 @@ public class LeaveRequestProcessTest extends Activiti6ApplicationTests {
 		assertFalse(tasks.isEmpty());
 		tasks.forEach(task -> {
 			Map<String, Object> variables = Maps.newHashMap();
-			variables.put("comment", "总经理["+employee.getName()+"]同意申请");
+			variables.put("comment", "总经理[" + employee.getName() + "]同意申请");
 			variables.put("approved", "true");
 			taskService.claim(task.getId(), employee.getId());
 			taskService.complete(task.getId(), variables);
@@ -98,8 +109,21 @@ public class LeaveRequestProcessTest extends Activiti6ApplicationTests {
 		assertFalse(tasks.isEmpty());
 		tasks.forEach(task -> {
 			Map<String, Object> variables = Maps.newHashMap();
-			variables.put("comment", "副总["+employee.getName()+"]同意申请");
+			variables.put("comment", "副总[" + employee.getName() + "]同意申请");
 			variables.put("approved", "true");
+			taskService.claim(task.getId(), employee.getId());
+			taskService.complete(task.getId(), variables);
+		});
+	}
+
+	private void duptyGeneralManagerRejectLeaveRequest(Employee employee) {
+		List<Task> tasks = taskService.createTaskQuery().processDefinitionKey(KEY)
+				.taskCandidateGroup("dupty_general_manager").list();
+		assertFalse(tasks.isEmpty());
+		tasks.forEach(task -> {
+			Map<String, Object> variables = Maps.newHashMap();
+			variables.put("comment", "副总[" + employee.getName() + "]驳回申请");
+			variables.put("approved", "false");
 			taskService.claim(task.getId(), employee.getId());
 			taskService.complete(task.getId(), variables);
 		});
@@ -123,18 +147,19 @@ public class LeaveRequestProcessTest extends Activiti6ApplicationTests {
 		assertFalse(tasks.isEmpty());
 		tasks.forEach(task -> {
 			Map<String, Object> variables = Maps.newHashMap();
-			variables.put("comment", "部门经理["+employee.getName()+"]同意申请");
+			variables.put("comment", "部门经理[" + employee.getName() + "]同意申请");
 			variables.put("approved", "true");
 			taskService.claim(task.getId(), employee.getId());
 			taskService.complete(task.getId(), variables);
 		});
 	}
 
-	private void employeeSubmitLeaveRequest(Employee employee, int days) {
+	private String employeeSubmitLeaveRequest(Employee employee, int days) {
 		Map<String, Object> variables = Maps.newHashMap();
 		variables.put("employeeId", employee.getId());
 		ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(KEY, variables);
-		log.info("ProcessInstance Id:{},definitation id:{}",processInstance.getId(), processInstance.getProcessDefinitionId());
+		log.info("ProcessInstance Id:{},definitation id:{}", processInstance.getId(),
+				processInstance.getProcessDefinitionId());
 
 		Task task = taskService.createTaskQuery().processInstanceId(processInstance.getId()).singleResult();
 		assertNotNull(task);
@@ -142,12 +167,13 @@ public class LeaveRequestProcessTest extends Activiti6ApplicationTests {
 		Map<String, Object> submitVariables = Maps.newHashMap();
 		submitVariables.put("numberOfDays", days);
 		submitVariables.put("startDate", "2019-01-04 10:00");
-		submitVariables.put("reason", "["+employee.getName()+"]世界那么大，我想出去走走.");
+		submitVariables.put("reason", "[" + employee.getName() + "]世界那么大，我想出去走走.");
 		taskService.complete(task.getId(), submitVariables);
 
 		List<Task> tasks = taskService.createTaskQuery().processInstanceId(processInstance.getId())
 				.taskAssignee(employee.getId()).list();
 		assertTrue(tasks.isEmpty());
+		return processInstance.getId();
 	}
 
 	@Value
